@@ -13,7 +13,7 @@ public class Bogosort {
         return instance;
     }
 
-    public int[] multithreadSort(int threads, int[] array) throws InterruptedException {
+    public int[] multithreadSort(int threads, int[] array) {
         AtomicReference<int[]> reference = new AtomicReference<>();
         Runnable runnable = () -> {
             int[] sort = sort(array);
@@ -37,6 +37,10 @@ public class Bogosort {
             String input = new Scanner(System.in).next();
             switch (input) {
                 case "stop" -> {
+                    if (reference.get() == null) {
+                        System.out.println("No thread resulted successfully. Returning the unsorted version");
+                        return array;
+                    }
                     threadList.forEach(Thread::interrupt);
                     return reference.get();
                 }

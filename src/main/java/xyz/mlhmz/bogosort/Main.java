@@ -6,7 +6,7 @@ import xyz.mlhmz.bogosort.cli.UserInput;
 import static xyz.mlhmz.bogosort.IntArrayUtils.*;
 
 public class Main {
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         BogosortCli bogosortCli = BogosortCli.getInstance();
         UserInput input = bogosortCli.prompt();
         int[] iteratedArray = createIteratedArray(input.arraySize());
