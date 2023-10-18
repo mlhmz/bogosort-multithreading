@@ -4,7 +4,7 @@ import java.util.Scanner;
 
 public class BogosortCli {
     private static final BogosortCli instance = new BogosortCli();
-    private Scanner scanner = new Scanner(System.in);
+    private final Scanner scanner = new Scanner(System.in);
 
     public static BogosortCli getInstance() {
         return instance;

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Bogosort {
-    private static Bogosort instance = new Bogosort();
+    private static final Bogosort instance = new Bogosort();
     private int trys = 0;
 
     public static Bogosort getInstance() {
