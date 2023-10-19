@@ -1,9 +1,8 @@
 package xyz.mlhmz.bogosort;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class Bogosort {
     private static final Bogosort instance = new Bogosort();
@@ -13,54 +12,22 @@ public class Bogosort {
         return instance;
     }
 
-    public int[] multithreadSort(int threads, int[] array) {
-        AtomicReference<int[]> reference = new AtomicReference<>();
-        Runnable runnable = () -> {
-            int[] sort = sort(array);
-            if (sort != null) {
-                reference.set(sort);
-            }
-        };
+    public int[] multithreadSort(int threads, int[] array) throws InterruptedException {
+        BlockingQueue<int[]> queue = new LinkedBlockingQueue<>();
+        Runnable sortRunnable = getSortRunnable(array, queue);
         ArrayList<Thread> threadList = new ArrayList<>();
-        for (int i = 0; i < threads; i++) {
-            Thread thread = new Thread(runnable);
-            thread.setName("BogoThread-" + i);
-            threadList.add(thread);
-            thread.start();
-        }
-        while (true) {
-            System.out.println("Multithreaded Bogosort");
-            System.out.println("As soon as a benchmark result appears, a sort was finished and a stop can be triggered");
-            System.out.println("Commands:");
-            System.out.println("stop - Ends all threads and gets the reference result");
-            System.out.println("info - Shows all threads information");
-            String input = new Scanner(System.in).next();
-            switch (input) {
-                case "stop" -> {
-                    if (reference.get() == null) {
-                        System.out.println("No thread resulted successfully. Returning the unsorted version");
-                        return array;
-                    }
-                    threadList.forEach(Thread::interrupt);
-                    return reference.get();
-                }
-                case "info" -> printThreadInformation(threadList);
-                default -> System.out.println("Unknown commands. Available commands: 'stop', 'info'.");
-            }
-        }
+        fillThreadList(threads, sortRunnable, threadList);
+        int[] take = queue.take();
+        threadList.forEach(Thread::interrupt);
+        return take;
     }
 
-    private void printThreadInformation(List<Thread> threadList) {
-        System.out.println("Thread Name\t\tThread State");
-        threadList.forEach(thread -> System.out.printf("%s\t\t%s%n", thread.getName(), thread.getState().toString()));
-    }
-
-    public int[] sort(int[] array) {
+    public int[] sort(int[] array) throws InterruptedException {
         long startMillis = System.currentTimeMillis();
         int[] result = array;
         for (int i = 1; i < array.length; i++) {
             if (Thread.currentThread().isInterrupted()) {
-                return null;
+                throw new InterruptedException();
             }
             if (array[i - 1] > array[i]) {
                 trys++;
@@ -76,5 +43,30 @@ public class Bogosort {
         System.out.printf("Result Benchmark: Thread %s, Required millis %d, Required seconds %d, Required trys %d%n",
                 Thread.currentThread().getName(), requiredMillis, requiredTimeInSeconds, trys);
         return result;
+    }
+
+    private void fillThreadList(int threadAmount, Runnable sortRunnable, ArrayList<Thread> threadList) {
+        for (int i = 0; i < threadAmount; i++) {
+            Thread thread = new Thread(sortRunnable);
+            String name = "BogoThread-" + i;
+            thread.setName(name);
+            threadList.add(thread);
+            thread.start();
+            System.out.printf("Started Thread %s.%n", name);
+        }
+    }
+
+    private Runnable getSortRunnable(int[] array, BlockingQueue<int[]> queue) {
+        return () -> {
+            int[] sort;
+            try {
+                sort = sort(array);
+                queue.put(sort);
+            } catch (InterruptedException e) {
+                System.out.printf("The thread %s was interrupted.%n", Thread.currentThread().getName());
+                // Continue Thread Interruption after catching it
+                Thread.currentThread().interrupt();
+            }
+        };
     }
 }
